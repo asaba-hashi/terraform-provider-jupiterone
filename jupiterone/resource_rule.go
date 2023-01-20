@@ -127,6 +127,7 @@ func (*QuestionRuleResource) Schema(ctx context.Context, req resource.SchemaRequ
 			},
 			"spec_version": schema.Int64Attribute{
 				Description: "Rule evaluation specification version in the case of breaking changes.",
+				Computed:    true,
 				Optional:    true,
 				PlanModifiers: []planmodifier.Int64{
 					Int64DefaultValue(types.Int64Value(1)),
@@ -134,6 +135,7 @@ func (*QuestionRuleResource) Schema(ctx context.Context, req resource.SchemaRequ
 			},
 			"polling_interval": schema.StringAttribute{
 				Description: "Frequency of automated rule evaluation. Defaults to ONE_DAY.",
+				Computed:    true,
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					StringDefaultValue(RulePollingIntervals[3]),
@@ -278,7 +280,7 @@ func (r *QuestionRuleResource) Create(ctx context.Context, req resource.CreateRe
 	// TODO: This map can probably be replaces by existing structs as well
 	rule, err := data.BuildQuestionRuleInstance()
 	if err != nil {
-		resp.Diagnostics.AddError("failed to create rule", err.Error())
+		resp.Diagnostics.AddError("failed to build rule from configuration", err.Error())
 		return
 	}
 
