@@ -22,7 +22,7 @@ func TestQuestion_Basic(t *testing.T) {
 	testHttpClient := cleanhttp.DefaultClient()
 	testHttpClient.Transport = logging.NewTransport("JupiterOne", recorder)
 	// testJ1Client is used for direct calls for CheckDestroy/etc.
-	testJ1Client, err := (&JupiterOneProviderModel{httpClient: testHttpClient}).Client(ctx)
+	testJ1Client, err := client.NewClientFromEnv(ctx, testHttpClient)
 	if err != nil {
 		t.Fatal("error configuring check client", err)
 	}

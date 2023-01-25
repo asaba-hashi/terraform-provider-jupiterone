@@ -4,7 +4,6 @@ import (
 	// "errors"
 	"context"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -28,9 +27,6 @@ type JupiterOneProviderModel struct {
 	APIKey    basetypes.StringValue `tfsdk:"api_key"`
 	AccountID basetypes.StringValue `tfsdk:"account_id"`
 	Region    basetypes.StringValue `tfsdk:"region"`
-
-	// httpClient should _only_ be used for tests using go-vcr/cassettes
-	httpClient *http.Client
 }
 
 var _ provider.Provider = &JupiterOneProvider{}
@@ -52,13 +48,64 @@ func (p *JupiterOneProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
+	// NOTE: One important use case here is client already being set at part
+	// of the acceptance tests to use the preconfigured `go-vcr` transport.
 	if p.Client == nil {
 		// Check environment variables. Performing this as part of Configure is
 		// the current de-facto way of "merging" defaults:
 		// https://github.com/hashicorp/terraform-plugin-framework/issues/539#issuecomment-1334470425
-		var err error
-		p.Client, err = data.Client(ctx)
+		apiKey := os.Getenv("JUPITERONE_API_KEY")
+		accountId := os.Getenv("JUPITERONE_ACCOUNT_ID")
+		region := os.Getenv("JUPITERONE_REGION")
 
+		if apiKey == "" {
+			apiKey = data.APIKey.ValueString()
+		}
+		if accountId == "" {
+			accountId = data.AccountID.ValueString()
+		}
+		if region == "" {
+			region = data.Region.ValueString()
+		}
+
+		if apiKey == "" {
+			resp.Diagnostics.AddError(
+				"Missing API key Configuration",
+				"While configuring the provider, the API key was not found in "+
+					"the JUPITER_ONEAPI_KEY environment variable or provider "+
+					"configuration block api_key attribute.",
+			)
+			// Not returning early allows the logic to collect all errors.
+		}
+
+		if accountId == "" {
+			resp.Diagnostics.AddError(
+				"Missing Account ID Configuration",
+				"While configuring the provider, the account id was not found in "+
+					"the JUPITER_ONE_ACCOUNT_ID variable or provider "+
+					"configuration block account_id attribute.",
+			)
+			// Not returning early allows the logic to collect all errors.
+		}
+
+		if region == "" {
+			resp.Diagnostics.AddError(
+				"Missing region Configuration",
+				"While configuring the provider, the region was not found in "+
+					"the JUPITER_ONE_REGION variable or provider "+
+					"configuration block region attribute.",
+			)
+			// Not returning early allows the logic to collect all errors.
+		}
+
+		config := client.JupiterOneClientConfig{
+			APIKey:    apiKey,
+			AccountID: accountId,
+			Region:    region,
+		}
+
+		var err error
+		p.Client, err = config.Client()
 		if err != nil {
 			resp.Diagnostics.AddError("failed to create JupiterOne client in provider configuration: %s", err.Error())
 			return
@@ -70,38 +117,6 @@ func (p *JupiterOneProvider) Configure(ctx context.Context, req provider.Configu
 
 	resp.DataSourceData = p
 	resp.ResourceData = p
-}
-
-// NewClient configures the J1 client itself from the provider model and
-// allows overrides from the env variables.
-//
-// TODO: For testing, will also accept an `http_client` set in the context for
-// for use with `cassettes` tests. This is a result of updating to the new
-// terraform-plugin-framework and needing to inject the client, while not
-// duplicating code or messing up the existing cassettes.
-func (m *JupiterOneProviderModel) Client(ctx context.Context) (*client.JupiterOneClient, error) {
-	apiKey := os.Getenv("JUPITERONE_API_KEY")
-	accountId := os.Getenv("JUPITERONE_ACCOUNT_ID")
-	region := os.Getenv("JUPITERONE_REGION")
-
-	if apiKey == "" {
-		apiKey = m.APIKey.ValueString()
-	}
-	if accountId == "" {
-		accountId = m.AccountID.ValueString()
-	}
-	if region == "" {
-		region = m.Region.ValueString()
-	}
-
-	config := client.JupiterOneClientConfig{
-		APIKey:     apiKey,
-		AccountID:  accountId,
-		Region:     region,
-		HTTPClient: m.httpClient,
-	}
-
-	return config.Client()
 }
 
 // DataSources implements provider.Provider
