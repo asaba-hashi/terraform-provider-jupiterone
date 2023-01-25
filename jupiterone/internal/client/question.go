@@ -102,16 +102,16 @@ func (c *JupiterOneClient) CreateQuestion(question *Question) (*Question, error)
 	req.Var("question", question)
 
 	var respData map[string]interface{}
-
+	var created *Question
 	if err := c.graphqlClient.Run(context.Background(), req, &respData); err != nil {
 		return nil, err
 	}
 
-	if err := mapstructure.Decode(respData["createQuestion"], question); err != nil {
+	if err := mapstructure.Decode(respData["createQuestion"], &created); err != nil {
 		return nil, err
 	}
 
-	return question, nil
+	return created, nil
 }
 
 func (c *JupiterOneClient) UpdateQuestion(id string, q *Question) (*Question, error) {
@@ -147,12 +147,12 @@ func (c *JupiterOneClient) UpdateQuestion(id string, q *Question) (*Question, er
 	req.Var("update", q)
 
 	var respData map[string]interface{}
-
+	var updated *Question
 	if err := c.graphqlClient.Run(context.Background(), req, &respData); err != nil {
 		return nil, err
 	}
 
-	if err := mapstructure.Decode(respData["updateQuestion"], q); err != nil {
+	if err := mapstructure.Decode(respData["updateQuestion"], &updated); err != nil {
 		return nil, err
 	}
 
