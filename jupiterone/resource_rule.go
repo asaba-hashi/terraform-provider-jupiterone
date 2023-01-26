@@ -390,16 +390,13 @@ func (r *QuestionRuleResource) Update(ctx context.Context, req resource.UpdateRe
 
 	// The UpdateRule operation needs the most current version of the rule to update it.
 	// We fetch it from the state if it is not specified by the user.
-	if data.Version.ValueInt64() == 0 {
-		paths, _ := req.State.PathMatches(ctx, path.MatchRoot("version"))
-		// I'm not sure what method to use to add this Diagnostic
-		// resp.Diagnostics.Append(d)
-		if len(paths) != 1 {
-			resp.Diagnostics.AddError("failed to get version from state", "no version path found in state")
+	if data.Version.IsUnknown() {
+		var state RuleModel
+		resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+		if resp.Diagnostics.HasErrors() {
+			return
 		}
-		versionPath := paths[0]
-		// TODO capture diagnostic
-		req.State.GetAttribute(ctx, versionPath, &data.Version)
+		data.Version = state.Version
 	}
 
 	if resp.Diagnostics.HasError() {
