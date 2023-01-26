@@ -393,7 +393,7 @@ func (r *QuestionRuleResource) Update(ctx context.Context, req resource.UpdateRe
 	if data.Version.IsUnknown() {
 		var state RuleModel
 		resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-		if resp.Diagnostics.HasErrors() {
+		if resp.Diagnostics.HasError() {
 			return
 		}
 		data.Version = state.Version
