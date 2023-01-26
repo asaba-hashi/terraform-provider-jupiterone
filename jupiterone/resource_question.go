@@ -273,8 +273,11 @@ func (r *QuestionResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	q := data.BuildQuestion()
+	id := q.Id
+	// question id must be empty when sending update object
+	q.Id = ""
 
-	_, err := r.client.UpdateQuestion(q.Id, q)
+	_, err := r.client.UpdateQuestion(id, q)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to update question", err.Error())
 		return

@@ -51,28 +51,28 @@ func (p *JupiterOneProvider) Configure(ctx context.Context, req provider.Configu
 	// NOTE: One important use case here is client already being set at part
 	// of the acceptance tests to use the preconfigured `go-vcr` transport.
 	if p.Client == nil {
+		apiKey := data.APIKey.ValueString()
+		accountId := data.AccountID.ValueString()
+		region := data.Region.ValueString()
+
 		// Check environment variables. Performing this as part of Configure is
 		// the current de-facto way of "merging" defaults:
 		// https://github.com/hashicorp/terraform-plugin-framework/issues/539#issuecomment-1334470425
-		apiKey := os.Getenv("JUPITERONE_API_KEY")
-		accountId := os.Getenv("JUPITERONE_ACCOUNT_ID")
-		region := os.Getenv("JUPITERONE_REGION")
-
 		if apiKey == "" {
-			apiKey = data.APIKey.ValueString()
+			apiKey = os.Getenv("JUPITERONE_API_KEY")
 		}
 		if accountId == "" {
-			accountId = data.AccountID.ValueString()
+			accountId = os.Getenv("JUPITERONE_ACCOUNT_ID")
 		}
 		if region == "" {
-			region = data.Region.ValueString()
+			region = os.Getenv("JUPITERONE_REGION")
 		}
 
 		if apiKey == "" {
 			resp.Diagnostics.AddError(
 				"Missing API key Configuration",
 				"While configuring the provider, the API key was not found in "+
-					"the JUPITER_ONEAPI_KEY environment variable or provider "+
+					"the JUPITERONE_API_KEY environment variable or provider "+
 					"configuration block api_key attribute.",
 			)
 			// Not returning early allows the logic to collect all errors.
@@ -82,7 +82,7 @@ func (p *JupiterOneProvider) Configure(ctx context.Context, req provider.Configu
 			resp.Diagnostics.AddError(
 				"Missing Account ID Configuration",
 				"While configuring the provider, the account id was not found in "+
-					"the JUPITER_ONE_ACCOUNT_ID variable or provider "+
+					"the JUPITERONE_ACCOUNT_ID variable or provider "+
 					"configuration block account_id attribute.",
 			)
 			// Not returning early allows the logic to collect all errors.
@@ -92,7 +92,7 @@ func (p *JupiterOneProvider) Configure(ctx context.Context, req provider.Configu
 			resp.Diagnostics.AddError(
 				"Missing region Configuration",
 				"While configuring the provider, the region was not found in "+
-					"the JUPITER_ONE_REGION variable or provider "+
+					"the JUPITERONE_REGION variable or provider "+
 					"configuration block region attribute.",
 			)
 			// Not returning early allows the logic to collect all errors.

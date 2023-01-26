@@ -388,6 +388,20 @@ func (r *QuestionRuleResource) Update(ctx context.Context, req resource.UpdateRe
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
+	// The UpdateRule operation needs the most current version of the rule to update it.
+	// We fetch it from the state if it is not specified by the user.
+	if data.Version.ValueInt64() == 0 {
+		paths, _ := req.State.PathMatches(ctx, path.MatchRoot("version"))
+		// I'm not sure what method to use to add this Diagnostic
+		// resp.Diagnostics.Append(d)
+		if len(paths) != 1 {
+			resp.Diagnostics.AddError("failed to get version from state", "no version path found in state")
+		}
+		versionPath := paths[0]
+		// TODO capture diagnostic
+		req.State.GetAttribute(ctx, versionPath, &data.Version)
+	}
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
